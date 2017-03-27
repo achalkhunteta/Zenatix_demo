@@ -1,0 +1,248 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    {% include "common_header.html" %}
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+
+    <div id="wrapper">
+
+        <!-- Navigation -->
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <a class="navbar-brand" href="javascript:;"><i class="fa fa-bolt" aria-hidden="true"></i>  Weather Application</a>
+            </div>
+
+            <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav side-nav">
+                    <li class="active">
+                        <a href={% url 'create_chart' %}><i class="fa fa-fw fa-bar-chart-o"></i> Weather Chart</a>
+                    </li>
+                    <li>
+                        <a href={% url 'add_station' %}><i class="fa fa-fw fa-plus"></i> Add Station</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="page-wrapper">
+
+            <div class="container-fluid">
+
+                <!-- Page Heading -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header">
+                            <i class="fa fa-bar-chart-o"></i> Weather Chart
+                        </h1>
+                    </div>
+                </div>
+                <!-- /.row -->
+
+                <div class="row">
+                    <div class="col-lg-3 panel">
+                        <select id="station" class="form-input col-md-12">
+                            <option value="" selected="selected">Select Station</option>
+                            {% for obj in stations %}
+                                <option value= {{ obj.station_name|safe }} data-country= {{ obj.country|safe }}>{{ obj.alias }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-lg-3 panel">
+                        <select id="temp_param" class="form-input col-md-12">
+                            <option value="" selected="selected">Select weather parameter</option>
+                            <option>Tempearture</option>
+                            <option>Humidity</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 panel">
+                        <input type="text" name="daterangepicker" id="daterangepicker" class="form-input col-md-12">
+                        </input>
+                    </div>
+                    <div class="col-lg-3 panel">
+                        <div class="col-md-8">
+                            <button id='plot_chart_btn' type="button" class="btn btn-success form-input col-md-12" >
+                                <i class="fa fa-line-chart"></i> Plot Chart
+                            </button>
+                        </div>
+                        <!-- <div class="col-md-5">
+                            <button id='reset_btn' type="button" class="btn btn-danger form-input col-md-12" >
+                                <i class="fa fa-times"></i> Reset
+                            </button>
+                        </div> -->
+                    </div>
+                </div>
+                <!-- /.row -->
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h3 class="panel-title"><i class="fa fa-bar-chart-o fa-fw"></i> Weather Chart</h3>
+                            </div>
+                            <div class="panel-body">
+                                <div id="area_chart" style="width:100%; height:400px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.row -->
+
+            </div>
+            <!-- /.container-fluid -->
+
+        </div>
+        <!-- /#page-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+    <!-- jQuery -->
+
+</body>
+</html>
+
+{% block load_js %}
+   
+   {% include "common_js.html" %}
+    <!-- Initializing Date Range Picker -->
+    <script type="text/javascript">
+        $(document).ready(function(){
+
+            var ajax_url = 'http://api.wunderground.com/api/059f8c84d1a1da1c/forecast10day/q/{1}/{2}.json';
+
+            /* Intialize DateTimeRange Picker*/
+            $("#daterangepicker").daterangepicker({
+                "singleDatePicker": true,
+                "locale": {
+                  'format': 'DD-MM-YYYY'
+                },
+                "dateLimit": {
+                    "days": 10
+                },
+            });
+
+            /* Initialize Select2 */
+            $('select').select2();
+
+            /* Initalize blank chart */
+            Highcharts.chart('area_chart', {
+                lang: {
+                    noData: "No Data To Display"
+                },
+                title: {
+                    text: ''
+                },
+            });
+
+            /* Plot Graph*/
+            $('#plot_chart_btn').on('click', function(e){
+
+                /* Get all required params */
+                var station_name = $('#station option:selected').val(),
+                    weather_param = $('#temp_param option:selected').val()
+                    country = $('#station option:selected').data('country'),
+                    date_str = $('#daterangepicker').val();
+
+                /* If all params are available then Process */
+                if (station_name && weather_param){
+
+                    /* Split whole date string to get start and end date strings*/
+                    // dates_arr = date_str.split(' - ')
+
+                    /* By Splitting we will get an array of [DD, MM, YYYY] format*/
+                    // start_date_arr = dates_arr[0].split('-')
+                    // end_date_arr = dates_arr[1].split('-')
+
+                    /* This is the Start date MonthMonthDateDate + End date MonthMonthDateDate string
+                        this needs to be sent with API request
+                    */
+                    // MMDDMMDD_str = start_date_arr[1] + start_date_arr[0] + end_date_arr[1] + end_date_arr[0]
+
+                    // get_url = ajax_url.replace('{0}', MMDDMMDD_str)
+                    get_url = ajax_url.replace('{1}', country)
+                    get_url = get_url.replace('{2}', station_name)
+
+                    /* Send ajax request on wonderground API */
+                    $.ajax({
+                        url: get_url,
+                        type: 'GET',
+                        success: function(response){
+
+                            chart_data = []
+                            /* Data Recieved from API */
+                            response_data = response['forecast']['simpleforecast']['forecastday']
+
+                            for (var i = 0; i < response_data.length; i++) {
+
+                                /* Get X axis String i.e 25 Mar*/
+                                x_str = String(response_data[i].date.day) + ' ' + response_data[i].date.monthname_short
+                                /* Set Y axis value selection param */
+                                if (weather_param.toLowerCase() == 'tempearture'){
+                                    y_val = Number(response_data[i].high.celsius)
+                                } else if (weather_param.toLowerCase() == 'humidity'){
+                                    y_val = Number(response_data[i].avehumidity)
+                                }
+
+                                chart_data.push({
+                                    name: x_str,
+                                    y: y_val
+                                })
+                            }
+
+                            /* Plot Chart using HighChart.js */
+                            $(function () { 
+                                var myChart = Highcharts.chart('area_chart', {
+                                    chart: {
+                                        type: 'area'
+                                    },
+                                    title: {
+                                        text: 'Weather Forecast'
+                                    },
+                                    xAxis: {
+                                        title: {
+                                            text: 'Number of Days'
+                                        }
+                                    },
+                                    yAxis: {
+                                        title: {
+                                            text: weather_param
+                                        }
+                                    },
+                                    series: [{
+                                        name: weather_param,
+                                        data: chart_data
+                                    }]
+                                });
+                            });
+                        }
+                    })                
+
+                } else {
+                    window.alert('Please Select all 3 params')
+                }
+
+            })
+
+            // $('#reset_btn').on('click', function(e){
+            //     console.log('here')
+            //     $('#station').val([]);
+            // })
+        });
+    </script>
+{% endblock %}
